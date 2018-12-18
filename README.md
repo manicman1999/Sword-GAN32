@@ -13,4 +13,4 @@ Inspiration:
 https://www.reddit.com/r/gamedev/comments/a3p414/pixelgen_alpha_officially_available_for/
 https://www.reddit.com/r/gamedev/comments/a71hn6/inspired_by_uchronosentinels_procedural_pixel_art/
 
-![alt text](example.png)
+![alt text](blob:https://imgur.com/8fc5d0d0-51bf-4a5c-a2e5-af47c89baa94)
