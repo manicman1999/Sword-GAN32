@@ -12,3 +12,5 @@ BicycleGAN https://arxiv.org/pdf/1711.11586.pdf
 Inspiration:
 https://www.reddit.com/r/gamedev/comments/a3p414/pixelgen_alpha_officially_available_for/
 https://www.reddit.com/r/gamedev/comments/a71hn6/inspired_by_uchronosentinels_procedural_pixel_art/
+
+![alt text](example.png)
