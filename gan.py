@@ -77,6 +77,8 @@ def d_block(f, b = True, p = True):
     temp.add(LeakyReLU(0.2))
     if p:
         temp.add(AveragePooling2D())
+        
+    return temp
     
 class GAN(object):
     
