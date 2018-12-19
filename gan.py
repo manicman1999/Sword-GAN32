@@ -52,22 +52,19 @@ def import_images(loc, n):
     return out
 
     
-from keras.layers import Conv2D, LeakyReLU, BatchNormalization, Dense, AveragePooling2D
+from keras.layers import Conv2D, BatchNormalization, Dense, AveragePooling2D, LeakyReLU
 from keras.layers import Reshape, UpSampling2D, Activation, Dropout, Flatten
 from keras.models import model_from_json, Sequential
 from keras.optimizers import Adam
-import keras.backend as K
 
 
-def w_loss(y_true, y_pred):
-    return K.mean(y_true * y_pred)
 
 def g_block(f, b = True):
     temp = Sequential()
     temp.add(UpSampling2D())
     temp.add(Conv2D(filters = f, kernel_size = 3, padding = 'same', kernel_initializer = 'he_uniform'))
     if b:
-        temp.add(BatchNormalization(momentum = 0.8))
+        temp.add(BatchNormalization(momentum = 0.9))
     temp.add(Activation('relu'))
     
     return temp
@@ -76,11 +73,10 @@ def d_block(f, b = True, p = True):
     temp = Sequential()
     temp.add(Conv2D(filters = f, kernel_size = 3, padding = 'same', kernel_initializer = 'he_uniform'))
     if b:
-        temp.add(BatchNormalization())
+        temp.add(BatchNormalization(momentum = 0.9))
+    temp.add(LeakyReLU(0.2))
     if p:
         temp.add(AveragePooling2D())
-    
-    return temp
     
 class GAN(object):
     
@@ -181,7 +177,7 @@ class GAN(object):
             self.DM = Sequential()
             self.DM.add(self.discriminator())
         
-        self.DM.compile(optimizer = Adam(lr = self.LR * (0.9 ** floor(self.steps / 10000))), loss = w_loss)
+        self.DM.compile(optimizer = Adam(lr = self.LR * (0.9 ** floor(self.steps / 10000))), loss = 'mse')
         
         return self.DM
     
@@ -192,7 +188,7 @@ class GAN(object):
             self.AM.add(self.generator())
             self.AM.add(self.discriminator())
             
-        self.AM.compile(optimizer = Adam(lr = self.LR * (0.9 ** floor(self.steps / 10000))), loss = w_loss)
+        self.AM.compile(optimizer = Adam(lr = self.LR * (0.9 ** floor(self.steps / 10000))), loss = 'mse')
         
         return self.AM
     
@@ -230,47 +226,6 @@ class GAN(object):
     def lod(self):
         
         self.D.set_weights(self.OD)
-        
-    def sog(self):
-        
-        self.OG = self.G.get_weights()
-        
-    def log(self):
-        
-        self.G.set_weights(self.OG)
-        
-    def save_checkpoint(self):
-        
-        self.ERD.append(self.D.get_weights())
-        self.ERG.append(self.G.get_weights())
-        
-        if len(self.ERD) > 30:
-            
-            del self.ERD[random.randint(0, len(self.ERD) - 3)]
-            del self.ERG[random.randint(0, len(self.ERG) - 3)]
-            
-    def load_check_G(self):
-        
-        self.sog()
-        
-        if len(self.ERG) > 3:
-        
-            self.G.set_weights(self.ERG[random.randint(0, len(self.ERG) - 1)])
-            
-    def load_check_D(self):
-        
-        self.sod()
-        
-        if len(self.ERG) > 3:
-        
-            self.D.set_weights(self.ERD[random.randint(0, len(self.ERG) - 1)])
-            
-    def clip_weights(self):
-        
-        for l in self.D.layers:
-            weights = l.get_weights()
-            weights = [np.clip(w, -self.clip_value, self.clip_value) for w in weights]
-            l.set_weights(weights)
         
         
 
@@ -322,7 +277,7 @@ class WGAN(object):
             self.lastblip = time.clock()
         
         if self.GAN.steps % 500 == 0:
-            self.GAN.save_checkpoint()
+            #self.GAN.save_checkpoint()
             #self.instance_noise()
             self.save(floor(self.GAN.steps / 10000))
             
@@ -344,11 +299,6 @@ class WGAN(object):
         
     def train_dis(self, batch):
         
-        roll = random.random()
-        
-        if roll < 0.2:
-            self.GAN.load_check_G()
-        
         #Get Real Images
         train_data = []
         label_data = []
@@ -359,8 +309,6 @@ class WGAN(object):
             
         d_loss_real = self.DisModel.train_on_batch(np.array(train_data), np.array(label_data))
         
-        self.GAN.clip_weights()
-        
         #Get Fake Images
         train_data = self.generator.predict(noise(batch, self.std_dev))
         label_data = []
@@ -369,21 +317,11 @@ class WGAN(object):
             
         d_loss_fake = self.DisModel.train_on_batch(train_data, np.array(label_data))
         
-        self.GAN.clip_weights()
-        
-        if roll < 0.2:
-            self.GAN.log()
-        
         return (d_loss_real, d_loss_fake)
         
     def train_gen(self, batch):
         
         self.GAN.sod()
-        
-        roll = random.random()
-        
-        if roll < 0.2:
-            self.GAN.load_check_D()
         
         label_data = []
         for i in range(int(batch)):
